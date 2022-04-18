@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"path"
 	"regexp"
 	"strings"
 )
@@ -63,7 +64,9 @@ func (h *HookBase) Run(files []string) {
 	}
 
 	for _, file := range files {
-		if !h.filePattern.MatchString(file) {
+		base := path.Base(file)
+
+		if !h.filePattern.MatchString(base) {
 			continue
 		}
 

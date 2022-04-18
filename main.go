@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -25,6 +26,7 @@ var kKnownHooks = Config{
 			hooks.CppTidy(),
 			hooks.JavaFmt(),
 			hooks.GoFmt(),
+			hooks.GoTidy(),
 			hooks.PythonFmt(),
 			hooks.RustFmt(),
 			hooks.RustTidy(),
@@ -88,8 +90,10 @@ func main() {
 		s.readGitSettings(repo)
 	}
 
-	if hooks, ok := kKnownHooks[os.Args[0]]; ok {
-		fmt.Println("Alright, i can run-alias this! Got", len(hooks.Hooks), "hooks")
+	self := path.Base(os.Args[0])
+
+	if hooks, ok := kKnownHooks[self]; ok {
+		runHooks(repo, hooks)
 	} else if len(os.Args) == 1 {
 		showConfig()
 		repo.SaveConfig()

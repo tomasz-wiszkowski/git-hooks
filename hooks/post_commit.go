@@ -15,6 +15,16 @@ func GoFmt() Hook {
 	return res
 }
 
+func GoTidy() Hook {
+	res := newHookBase("GoVet", "Golang Tidy", `\.go$`, RunPerCommit)
+	path := res.getExecutablePath("go")
+	if path != nil {
+		res.setAvailable(true)
+		res.setCommand([]string{*path, "vet"})
+	}
+	return res
+}
+
 //
 // Chrome-specific
 //
