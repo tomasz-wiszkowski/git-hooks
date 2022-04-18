@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -26,6 +27,7 @@ var kKnownHooks = Config{
 			hooks.CppTidy(),
 			hooks.JavaFmt(),
 			hooks.GoFmt(),
+			hooks.GoModTidy(),
 			hooks.GoTidy(),
 			hooks.PythonFmt(),
 			hooks.RustFmt(),
@@ -84,28 +86,39 @@ func onTreeNodeSelected(node *tview.TreeNode) {
 	}
 }
 
-func main() {
+func openRepo() *GitRepo {
 	repo := GitRepoOpen()
 	for _, s := range kKnownHooks {
 		s.readGitSettings(repo)
 	}
+	return repo
+}
 
+func main() {
 	self := path.Base(os.Args[0])
 
 	if hooks, ok := kKnownHooks[self]; ok {
-		runHooks(repo, hooks)
+		runHooks(hooks)
 	} else if len(os.Args) == 1 {
 		showConfig()
-		repo.SaveConfig()
 	} else if hooks, ok := kKnownHooks[os.Args[1]]; ok {
-		runHooks(repo, hooks)
+		runHooks(hooks)
+	} else if os.Args[1] == "install" {
+		install()
 	} else {
 		fmt.Println("Unknown hook type", os.Args[1])
 	}
 }
 
-func runHooks(repo *GitRepo, category *Category) {
+func runHooks(category *Category) {
+	repo := openRepo()
 	files := repo.GetListOfNewAndModifiedFiles()
+
+	// Used by hooks install, file fixing and others
+	err := os.Chdir(repo.WorkDir().Root())
+	if err != nil {
+		panic(err)
+	}
 
 	fmt.Println("Running hooks for", category.Name)
 	for _, h := range category.Hooks {
@@ -114,6 +127,7 @@ func runHooks(repo *GitRepo, category *Category) {
 }
 
 func showConfig() {
+	repo := openRepo()
 	root := tview.NewTreeNode("Hooks").SetColor(tcell.ColorGrey)
 	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
 	tree.SetSelectedFunc(onTreeNodeSelected)
@@ -132,5 +146,34 @@ func showConfig() {
 		panic(err)
 	}
 
+	repo.SaveConfig()
 	fmt.Println("Farewell")
+}
+
+func install() {
+	selfAbsolutePath,err := filepath.Abs(os.Args[0])
+	if err != nil {
+		panic(err)
+	}
+	repo := openRepo()
+	gitDir := repo.GitDir()
+	
+	hookDir, err := gitDir.Chroot("hooks")
+	if err != nil {
+		panic(err)
+	}
+	for _, category := range kKnownHooks {
+		fmt.Println("Installing", category.ID, "in", hookDir.Root(), "pointing to", selfAbsolutePath)
+		err = hookDir.Remove(category.ID)
+		if err != nil {
+			panic(err)
+		}
+
+		err = os.Symlink(selfAbsolutePath, hookDir.Join(hookDir.Root(), category.ID))
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	showConfig()
 }

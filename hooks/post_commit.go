@@ -25,6 +25,16 @@ func GoTidy() Hook {
 	return res
 }
 
+func GoModTidy() Hook {
+	res := newHookBase("GoModTidy", "Golang Module Tidy", `^go.mod$`, RunPerCommit)
+	path := res.getExecutablePath("go")
+	if path != nil {
+		res.setAvailable(true)
+		res.setCommand([]string{*path, "mod", "tidy"})
+	}
+	return res
+}
+
 //
 // Chrome-specific
 //
