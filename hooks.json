@@ -1,0 +1,56 @@
+{
+  "postCommit": [
+    {
+      "id": "ChromeClFormat",
+      "name": "Chrome CL Format"
+    },
+    {
+      "id": "GoogleJavaFormat",
+      "name": "Google Java Format"
+    },
+    {
+      "id": "ChromeGnCheckDeps",
+      "name": "Chrome GN CheckDeps"
+    },
+    {
+      "id": "ChromeHistogramFormat",
+      "name": "Chrome Histogram Formatter"
+    },
+    {
+      "id": "ChromeJSONFormat",
+      "name": "Chrome JSON Formatter"
+    },
+    {
+      "id": "ChromePresubmit",
+      "name": "Chrome Presubmit Checks"
+    },
+    {
+      "id": "ClangFmt",
+      "name": "Clang Code Formatter"
+    },
+    {
+      "id": "ClangTidy",
+      "name": "Clang Tidy"
+    },
+    {
+      "id": "GoFmt",
+      "name": "Golang Code Formatter"
+    },
+    {
+      "id": "JSONFmt",
+      "name": "JSON Code Formatter"
+    },
+    {
+      "id": "PythonFmt",
+      "name": "Python Code Formatter"
+    },
+    {
+      "id": "RustFmt",
+      "name": "Rust Code Formatter"
+    },
+    {
+      "id": "RustClippy",
+      "name": "Rust Tidy (Clippy)"
+    }
+  ]
+}
