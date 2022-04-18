@@ -1,43 +1,70 @@
 package main
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"os"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"github.com/tomasz-wiszkowski/go-hookcfg/hooks"
 )
 
-type Config struct {
-	PostCommit []*Hook `json:"postCommit"`
-}
-
-const (
-	CategoryRoot = iota
-	CategoryPostCommit
-)
+type Config map[string]*Category
 
 type Reference struct {
-	category int
-	hook *Hook
+	category *Category
+	hook     hooks.Hook
 }
 
-var config Config
+var kKnownHooks = Config{
+	"post-commit": &Category{
+		ID:   "post-commit",
+		Name: "Post-commit hooks",
+		Hooks: []hooks.Hook{
+			hooks.CppFmt(),
+			hooks.CppTidy(),
+			hooks.JavaFmt(),
+			hooks.GoFmt(),
+			hooks.PythonFmt(),
+			hooks.RustFmt(),
+			hooks.RustTidy(),
+			hooks.ChromeClFmt(),
+			hooks.ChromeClPresubmit(),
+			hooks.ChromeGnDeps(),
+			hooks.ChromeJsonFmt(),
+			hooks.ChromeHistogramFmt(),
+		},
+	},
+}
 
 func add(target *tview.TreeNode, ref *Reference) {
-	if ref.category == CategoryRoot {
-		node := tview.NewTreeNode("Post-commit").SetReference(&Reference{CategoryPostCommit, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
-		target.AddChild(node)
-		add(node, node.GetReference().(*Reference))
-	}
-
-	if ref.category == CategoryPostCommit && ref.hook == nil {
-		for _, h := range config.PostCommit {
-			node := tview.NewTreeNode("").SetReference(&Reference{CategoryPostCommit, h}).SetSelectable(true)
-			h.updateNode(node)
+	if ref.category == nil {
+		for _, c := range kKnownHooks {
+			node := tview.NewTreeNode(c.ID).SetReference(&Reference{c, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
+			target.AddChild(node)
+			add(node, node.GetReference().(*Reference))
+		}
+	} else if ref.hook == nil {
+		for _, h := range ref.category.Hooks {
+			node := tview.NewTreeNode("").SetReference(&Reference{ref.category, h}).SetSelectable(true)
+			updateTreeNode(h, node)
 			target.AddChild(node)
 		}
 	}
+}
+
+func updateTreeNode(hook hooks.Hook, node *tview.TreeNode) {
+	var marker rune
+	if hook.State() == hooks.SelectedStateUnknown {
+		marker = '?'
+	} else if hook.State() == hooks.SelectedStateUnavailable {
+		marker = '✘'
+	} else if hook.State() == hooks.SelectedStateDisabled {
+		marker = ' '
+	} else if hook.State() == hooks.SelectedStateEnabled {
+		marker = '✔'
+	}
+	node.SetText(fmt.Sprintf("[%c] %s", marker, hook.Name()))
 }
 
 func onTreeNodeSelected(node *tview.TreeNode) {
@@ -50,29 +77,56 @@ func onTreeNodeSelected(node *tview.TreeNode) {
 		node.SetExpanded(!node.IsExpanded())
 	} else {
 		// This is a leaf.
-		hook.toggleSelected()
-		hook.updateNode(node)
+		hook.SetSelected(!hook.IsSelected())
+		updateTreeNode(hook, node)
 	}
 }
 
 func main() {
-	var err error
-	var configFile []byte
-
-	if configFile, err = ioutil.ReadFile("hooks.json"); err != nil {
-		panic(err)
+	repo := GitRepoOpen()
+	for _, s := range kKnownHooks {
+		s.readGitSettings(repo)
 	}
 
-	if err = json.Unmarshal(configFile, &config); err != nil {
-		panic(err)
+	if hooks, ok := kKnownHooks[os.Args[0]]; ok {
+		fmt.Println("Alright, i can run-alias this! Got", len(hooks.Hooks), "hooks")
+	} else if len(os.Args) == 1 {
+		showConfig()
+		repo.SaveConfig()
+	} else if hooks, ok := kKnownHooks[os.Args[1]]; ok {
+		runHooks(repo, hooks)
+	} else {
+		fmt.Println("Unknown hook type", os.Args[1])
 	}
+}
 
+func runHooks(repo *GitRepo, category *Category) {
+	files := repo.GetListOfNewAndModifiedFiles()
+
+	fmt.Println("Running hooks for", category.Name)
+	for _, h := range category.Hooks {
+		h.Run(files)
+	}
+}
+
+func showConfig() {
 	root := tview.NewTreeNode("Hooks").SetColor(tcell.ColorGrey)
 	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
 	tree.SetSelectedFunc(onTreeNodeSelected)
-	add(root, &Reference{CategoryRoot, nil})
+	add(root, &Reference{nil, nil})
 
-	if err := tview.NewApplication().SetRoot(tree, true).EnableMouse(true).Run(); err != nil {
+	app := tview.NewApplication()
+	app.SetRoot(tree, true).EnableMouse(true)
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEscape {
+			app.Stop()
+		}
+		return event
+	})
+
+	if err := app.Run(); err != nil {
 		panic(err)
 	}
+
+	fmt.Println("Farewell")
 }
