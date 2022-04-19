@@ -41,14 +41,14 @@ type hookBase struct {
 	name string
 	/// Regexp pattern for file matching. This hook will execute only if appropriate matches are found.
 	filePattern *regexp.Regexp
-	/// Whether the hook is available, eg. appropriate tools are installed. This is controlled by the user of the hook.
-	available bool
 	/// Shell command and arguments.
 	shellCommand []string
-	/// Whether the hook is selected to be run.
-	selected bool
 	/// Execution style, eg. once per file or once per commit.
 	runType RunType
+	/// Whether the hook is selected to be run.
+	selected bool
+	/// Whether the hook is available, eg. appropriate tools are installed. This is controlled by the user of the hook.
+	available bool
 	/// Related configuration section where additional metadata may be stored.
 	config Config
 }

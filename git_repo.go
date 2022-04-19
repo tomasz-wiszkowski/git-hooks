@@ -7,6 +7,7 @@ import (
 	raw "github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/filesystem"
+	"github.com/tomasz-wiszkowski/go-hookcfg/hooks"
 )
 
 type GitRepo struct {
@@ -87,7 +88,7 @@ func (g *GitRepo) GetListOfNewAndModifiedFiles() []string {
 	return paths
 }
 
-func (g *GitRepo) getConfigFor(categoryID, hookID string) *GitSection {
+func (g *GitRepo) GetConfigFor(categoryID, hookID string) hooks.Config {
 	return &GitSection{
 		parent:     g,
 		section:    categoryID,

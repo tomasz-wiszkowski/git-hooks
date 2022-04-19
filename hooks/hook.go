@@ -10,6 +10,10 @@ type Hook interface {
 	Run(file []string)
 }
 
+type ConfigStore interface {
+	GetConfigFor(section, subsection string) Config
+}
+
 type Config interface {
 	Set(key, value string)
 	Has(key string) bool

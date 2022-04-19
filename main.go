@@ -11,24 +11,14 @@ import (
 	"github.com/tomasz-wiszkowski/go-hookcfg/hooks"
 )
 
-type Config map[string]*Category
-
 type Reference struct {
-	category *Category
+	category *hooks.Category
 	hook     hooks.Hook
-}
-
-var kKnownHooks = Config{
-	"post-commit": &Category{
-		ID:    "post-commit",
-		Name:  "Post-commit hooks",
-		Hooks: hooks.POST_COMMIT_HOOKS,
-	},
 }
 
 func add(target *tview.TreeNode, ref *Reference) {
 	if ref.category == nil {
-		for _, c := range kKnownHooks {
+		for _, c := range *hooks.GetHookConfig() {
 			node := tview.NewTreeNode(c.ID).SetReference(&Reference{c, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
 			target.AddChild(node)
 			add(node, node.GetReference().(*Reference))
@@ -72,21 +62,19 @@ func onTreeNodeSelected(node *tview.TreeNode) {
 
 func openRepo() *GitRepo {
 	repo := GitRepoOpen()
-	for _, s := range kKnownHooks {
-		s.readGitSettings(repo)
-	}
+	hooks.SetConfigStore(repo)
 	return repo
 }
 
 func main() {
-	self := path.Base(os.Args[0])
+	selfName := path.Base(os.Args[0])
 
-	if hooks, ok := kKnownHooks[self]; ok {
-		runHooks(hooks)
+	if h, ok := hooks.GetCategory(selfName); ok {
+		runHooks(h)
 	} else if len(os.Args) == 1 {
 		showConfig()
-	} else if hooks, ok := kKnownHooks[os.Args[1]]; ok {
-		runHooks(hooks)
+	} else if h, ok := hooks.GetCategory(os.Args[1]); ok {
+		runHooks(h)
 	} else if os.Args[1] == "install" {
 		install()
 	} else {
@@ -94,7 +82,7 @@ func main() {
 	}
 }
 
-func runHooks(category *Category) {
+func runHooks(category *hooks.Category) {
 	repo := openRepo()
 	files := repo.GetListOfNewAndModifiedFiles()
 
@@ -146,7 +134,7 @@ func install() {
 	if err != nil {
 		panic(err)
 	}
-	for _, category := range kKnownHooks {
+	for _, category := range *hooks.GetHookConfig() {
 		fmt.Println("Installing", category.ID, "in", hookDir.Root(), "pointing to", selfAbsolutePath)
 		err = hookDir.Remove(category.ID)
 		if err != nil {
