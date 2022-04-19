@@ -15,6 +15,24 @@ const (
 	runPerFile
 )
 
+const (
+	///
+	/// Configuration keys
+	///
+
+	/// Configuration key controlling whether hook is enabled.
+	keyEnabled = "enabled"
+	/// Configuration key controlling the substitute command path.
+	keyCommand = "cmd"
+
+	///
+	/// Values
+	///
+
+	/// Value indicating boolean true
+	valueTrue = "true"
+)
+
 /// hookBase is a convenient do-it-all class that can be instantiated to execute tools from shell.
 type hookBase struct {
 	/// Unique ID of the hook. Not enforced.
@@ -43,20 +61,26 @@ type hookBase struct {
 /// @param runType How to execute the hook.
 /// @return Newly created hookBase object.
 func newHookBase(id, name, filePattern string, shellCmd []string, runType RunType) *hookBase {
-	available, command := getShellCommandAbsolutePath(shellCmd[0])
-	if available {
-		shellCmd[0] = command
-	}
-
-	return &hookBase{
+	hb := &hookBase{
 		id:           id,
 		name:         name,
 		filePattern:  regexp.MustCompile(filePattern),
-		available:    available,
+		available:    false,
 		shellCommand: shellCmd,
 		selected:     false,
 		runType:      runType,
 		config:       nil,
+	}
+
+	return hb
+}
+
+/// Specify the command to be run for this hook
+func (h *hookBase) setShellCmd(cmd string) {
+	available, command := getShellCommandAbsolutePath(cmd)
+	if available {
+		h.shellCommand[0] = command
+		h.available = available
 	}
 }
 
@@ -130,9 +154,9 @@ func (h *hookBase) SetSelected(wantSelected bool) {
 	h.selected = wantSelected
 
 	if wantSelected {
-		h.config.Set("enabled", "true")
+		h.config.Set(keyEnabled, valueTrue)
 	} else {
-		h.config.Remove("enabled")
+		h.config.Remove(keyEnabled)
 	}
 }
 
@@ -145,10 +169,6 @@ func (h *hookBase) SetConfig(cfg Config) {
 		panic("No config section")
 	}
 
-	state := false
-	if cfg.Has("enabled") {
-		state = cfg.Get("enabled") == "true"
-	}
-
-	h.SetSelected(state)
+	h.SetSelected(cfg.GetOrDefault(keyEnabled, "") == valueTrue)
+	h.setShellCmd(cfg.GetOrDefault(keyCommand, h.shellCommand[0]))
 }

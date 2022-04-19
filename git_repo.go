@@ -100,8 +100,11 @@ func (s *GitSection) Has(key string) bool {
 	return s.subsection.HasOption(key)
 }
 
-func (s *GitSection) Get(key string) string {
-	return s.subsection.Option(key)
+func (s *GitSection) GetOrDefault(key, dflt string) string {
+	if s.Has(key) {
+		return s.subsection.Option(key)
+	}
+	return dflt
 }
 
 func (s *GitSection) Set(key, value string) {

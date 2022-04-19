@@ -13,6 +13,6 @@ type Hook interface {
 type Config interface {
 	Set(key, value string)
 	Has(key string) bool
-	Get(key string) string
+	GetOrDefault(key, dflt string) string
 	Remove(key string)
 }
