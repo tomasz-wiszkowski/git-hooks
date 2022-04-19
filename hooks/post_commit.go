@@ -24,6 +24,6 @@ var POST_COMMIT_HOOKS = []Hook{
 	newHookBase("ChromeClFmt", "Chrome CL Format", `.*`, []string{"git-cl", "format"}, runPerCommit),
 	newHookBase("ChromeClPresubmit", "Chrome CL Presubmit", `.*`, []string{"git-cl", "presubmit"}, runPerCommit),
 	newHookBase("ChromeGnDeps", "Chrome GN Deps", `^(.*\.gn[i]?|DEPS)$`, []string{"gn", "gen", "out/android.debug.arm", "--check"}, runPerCommit),
-	newHookBase("ChromeJsonFmt", "Chrome JSON Format", `\.json$`, []string{"testing/variations/PRESUBMIT.py"}, runPerFile),
+	newHookBase("ChromeJsonFmt", "Chrome JSON Format", `^fieldtrial_testing_config\.json$`, []string{"testing/variations/PRESUBMIT.py"}, runPerFile),
 	newHookBase("ChromeHistogramFmt", "Chrome Histogram Format", `^(histograms|enums)\.xml$`, []string{"tools/metrics/histograms/validate_format.py"}, runPerFile),
 }

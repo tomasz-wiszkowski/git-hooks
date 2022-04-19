@@ -130,15 +130,22 @@ func install() {
 	repo := openRepo()
 	gitDir := repo.GitDir()
 
+	err = gitDir.MkdirAll("hooks", 0755)
+	if err != nil {
+		panic(err)
+	}
+	
 	hookDir, err := gitDir.Chroot("hooks")
 	if err != nil {
 		panic(err)
 	}
 	for _, category := range *hooks.GetHookConfig() {
 		fmt.Println("Installing", category.ID, "in", hookDir.Root(), "pointing to", selfAbsolutePath)
-		err = hookDir.Remove(category.ID)
-		if err != nil {
-			panic(err)
+		if _, err = hookDir.Stat(category.ID); err == nil {
+			err = hookDir.Remove(category.ID)
+			if err != nil && err != os.ErrNotExist {
+				panic(err)
+			}
 		}
 
 		err = os.Symlink(selfAbsolutePath, hookDir.Join(hookDir.Root(), category.ID))
