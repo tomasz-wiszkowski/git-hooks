@@ -1,18 +1,17 @@
 package main
 
 import (
+	billy "github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	raw "github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	billy "github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 )
 
 type GitRepo struct {
-	repo      *git.Repository
-	config    *config.Config
-	rawconfig *raw.Config
+	repo   *git.Repository
+	config *config.Config
 }
 
 type GitSection struct {
@@ -50,16 +49,12 @@ func (g *GitRepo) WorkDir() billy.Filesystem {
 
 func (g *GitRepo) GitDir() billy.Filesystem {
 	st := g.repo.Storer.(*filesystem.Storage).Filesystem()
-	
+
 	return st
 }
 
 func (g *GitRepo) SaveConfig() {
 	err := g.repo.SetConfig(g.config)
-	if err != nil {
-		panic(err)
-	}
-	err = g.repo.SetConfig(g.config)
 	if err != nil {
 		panic(err)
 	}
@@ -110,6 +105,10 @@ func (s *GitSection) Get(key string) string {
 }
 
 func (s *GitSection) Set(key, value string) {
-	// note: addoption will add more keys with same name
+	// Note: AddOption adds multiple keys with same name
 	s.subsection.SetOption(key, value)
+}
+
+func (s *GitSection) Remove(key string) {
+	s.subsection.RemoveOption(key)
 }

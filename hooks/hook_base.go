@@ -1,65 +1,84 @@
 package hooks
 
 import (
-	"bytes"
 	"fmt"
-	"log"
-	"os/exec"
 	"path"
 	"regexp"
-	"strings"
 )
 
-type HookBase struct {
-	id           string
-	name         string
-	filePattern  *regexp.Regexp
-	available    bool
+type RunType int8
+
+const (
+	/// Run once per commit.
+	runPerCommit = iota
+	/// Run once per file.
+	runPerFile
+)
+
+/// hookBase is a convenient do-it-all class that can be instantiated to execute tools from shell.
+type hookBase struct {
+	/// Unique ID of the hook. Not enforced.
+	id string
+	/// Human-readable name of the hook.
+	name string
+	/// Regexp pattern for file matching. This hook will execute only if appropriate matches are found.
+	filePattern *regexp.Regexp
+	/// Whether the hook is available, eg. appropriate tools are installed. This is controlled by the user of the hook.
+	available bool
+	/// Shell command and arguments.
 	shellCommand []string
-	selState     SelectedState
-	runType      RunType
-	config       Config
+	/// Whether the hook is selected to be run.
+	selected bool
+	/// Execution style, eg. once per file or once per commit.
+	runType RunType
+	/// Related configuration section where additional metadata may be stored.
+	config Config
 }
 
-func newHookBase(id, name, filePattern string, runType RunType) *HookBase {
-	return &HookBase{
+/// Create a new hookBase object from the supplied pieces.
+///
+/// @param id The unique ID of the hook.
+/// @param name Human readable name.
+/// @param filePattern Regexp used for file matching. Hook will only run if a match is detected.
+/// @param runType How to execute the hook.
+/// @return Newly created hookBase object.
+func newHookBase(id, name, filePattern string, shellCmd []string, runType RunType) *hookBase {
+	available, command := getShellCommandAbsolutePath(shellCmd[0])
+	if available {
+		shellCmd[0] = command
+	}
+
+	return &hookBase{
 		id:           id,
 		name:         name,
 		filePattern:  regexp.MustCompile(filePattern),
-		available:    false,
-		shellCommand: []string{},
-		selState:     SelectedStateUnknown,
+		available:    available,
+		shellCommand: shellCmd,
+		selected:     false,
 		runType:      runType,
 		config:       nil,
 	}
 }
 
-func (h *HookBase) setAvailable(available bool) {
-	h.available = available
-}
-
-func (h *HookBase) setCommand(command []string) {
-	h.shellCommand = command
-}
-
-func (h *HookBase) RunType() RunType {
-	return h.runType
-}
-
-func (h *HookBase) ID() string {
+/// @return An unique ID of this hook.
+func (h *hookBase) ID() string {
 	return h.id
 }
 
-func (h *HookBase) Name() string {
+/// @return Human readable name of the hook.
+func (h *hookBase) Name() string {
 	return h.name
 }
 
-func (h *HookBase) Run(files []string) {
+/// Execute an action associated with the hook on the supplied list of files.
+/// Each file is matched against the previously supplied filePattern.
+/// Performs no operation if the hook is not selected, or if the corresponding command does not exist.
+func (h *hookBase) Run(files []string) {
 	if !h.IsSelected() {
 		return
 	}
 	if !h.IsAvailable() {
-		fmt.Println("Cannot run", h.Name(), "- missing command.")
+		fmt.Println("Cannot run", h.Name(), "- missing command", h.shellCommand[0])
 		return
 	}
 
@@ -70,86 +89,66 @@ func (h *HookBase) Run(files []string) {
 			continue
 		}
 
-		if h.RunType() == RunPerCommit {
+		var cmd []string
+
+		if h.runType == runPerCommit {
 			fmt.Println("Running", h.name)
-			h.runCommand(h.shellCommand)
-			return
-		} else if h.RunType() == RunPerFile {
+			cmd = h.shellCommand
+		} else if h.runType == runPerFile {
 			fmt.Println("Running", h.name, "on", file)
-			h.runCommand(append(h.shellCommand, file))
+			cmd = append(h.shellCommand, file)
+		}
+
+		sout, serr := runShellCommand(cmd)
+		if len(serr) > 0 {
+			fmt.Println(serr)
+		}
+		if len(sout) > 0 {
+			fmt.Println(sout)
+		}
+
+		if h.runType == runPerCommit {
+			return
 		}
 	}
 }
 
-func (h *HookBase) IsSelected() bool {
-	return h.selState == SelectedStateEnabled || h.selState == SelectedStateUnavailable
+/// @return Whether the hook is requested to be run.
+func (h *hookBase) IsSelected() bool {
+	return h.selected
 }
 
-func (h *HookBase) IsAvailable() bool {
+/// @return Whether the hook can be run.
+func (h *hookBase) IsAvailable() bool {
 	return h.available
 }
 
-func (h *HookBase) SetSelected(wantSelected bool) {
+/// Modify the selected state of the hook.
+///
+/// @param wantSelected Whether the hook should be selected.
+func (h *hookBase) SetSelected(wantSelected bool) {
+	h.selected = wantSelected
+
 	if wantSelected {
-		if h.IsAvailable() {
-			h.selState = SelectedStateEnabled
-		} else {
-			h.selState = SelectedStateUnavailable
-		}
 		h.config.Set("enabled", "true")
 	} else {
-		h.selState = SelectedStateDisabled
-		h.config.Set("enabled", "false")
+		h.config.Remove("enabled")
 	}
 }
 
-func (h *HookBase) State() SelectedState {
-	return h.selState
-}
-
-func (h *HookBase) SetConfig(cfg Config) {
+/// Specify the configuration section responsible for managing the hook data.
+///
+/// @param cfg The configuration storer for the hook data.
+func (h *hookBase) SetConfig(cfg Config) {
 	h.config = cfg
 	if cfg == nil {
 		panic("No config section")
 	}
-	if !cfg.Has("enabled") {
-		h.selState = SelectedStateUnknown
-		return
-	}
-	h.SetSelected(cfg.Get("enabled") == "true")
-}
 
-func (h *HookBase) checkAvailable() bool {
-	fmt.Println("ffffff")
-	return true
-}
-
-func (h *HookBase) getExecutablePath(executableName string) *string {
-	path, err := exec.LookPath(executableName)
-	if err != nil {
-		return nil
-	}
-	return &path
-}
-
-func (h *HookBase) runCommand(args []string) (stdout, stderr string) {
-	cmd := exec.Command(args[0], args[1:]...)
-	var outb, errb bytes.Buffer
-	cmd.Stdout = &outb
-	cmd.Stderr = &errb
-	err := cmd.Run()
-	if err != nil {
-		log.Fatal(err)
+	state := false
+	if cfg.Has("enabled") {
+		state = cfg.Get("enabled") == "true"
 	}
 
-	outStr := strings.TrimSpace(outb.String())
-	if len(outStr) > 0 {
-		fmt.Println(h.Name(), "output:", outStr)
-	}
-	errStr := strings.TrimSpace(errb.String())
-	if len(errStr) > 0 {
-		fmt.Println(h.Name(), "error:", errStr)
-	}
-
-	return outStr, errStr
+	h.SetSelected(state)
 }

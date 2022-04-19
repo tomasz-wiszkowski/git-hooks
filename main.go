@@ -20,24 +20,9 @@ type Reference struct {
 
 var kKnownHooks = Config{
 	"post-commit": &Category{
-		ID:   "post-commit",
-		Name: "Post-commit hooks",
-		Hooks: []hooks.Hook{
-			hooks.CppFmt(),
-			hooks.CppTidy(),
-			hooks.JavaFmt(),
-			hooks.GoFmt(),
-			hooks.GoModTidy(),
-			hooks.GoTidy(),
-			hooks.PythonFmt(),
-			hooks.RustFmt(),
-			hooks.RustTidy(),
-			hooks.ChromeClFmt(),
-			hooks.ChromeClPresubmit(),
-			hooks.ChromeGnDeps(),
-			hooks.ChromeJsonFmt(),
-			hooks.ChromeHistogramFmt(),
-		},
+		ID:    "post-commit",
+		Name:  "Post-commit hooks",
+		Hooks: hooks.POST_COMMIT_HOOKS,
 	},
 }
 
@@ -59,15 +44,14 @@ func add(target *tview.TreeNode, ref *Reference) {
 
 func updateTreeNode(hook hooks.Hook, node *tview.TreeNode) {
 	var marker rune
-	if hook.State() == hooks.SelectedStateUnknown {
-		marker = '?'
-	} else if hook.State() == hooks.SelectedStateUnavailable {
-		marker = '✘'
-	} else if hook.State() == hooks.SelectedStateDisabled {
+	if !hook.IsSelected() {
 		marker = ' '
-	} else if hook.State() == hooks.SelectedStateEnabled {
+	} else if !hook.IsAvailable() {
+		marker = '✘'
+	} else /* selected and available */ {
 		marker = '✔'
 	}
+
 	node.SetText(fmt.Sprintf("[%c] %s", marker, hook.Name()))
 }
 
@@ -151,13 +135,13 @@ func showConfig() {
 }
 
 func install() {
-	selfAbsolutePath,err := filepath.Abs(os.Args[0])
+	selfAbsolutePath, err := filepath.Abs(os.Args[0])
 	if err != nil {
 		panic(err)
 	}
 	repo := openRepo()
 	gitDir := repo.GitDir()
-	
+
 	hookDir, err := gitDir.Chroot("hooks")
 	if err != nil {
 		panic(err)
