@@ -70,11 +70,11 @@ func main() {
 	selfName := path.Base(os.Args[0])
 
 	if h, ok := hooks.GetCategory(selfName); ok {
-		runHooks(h)
+		runHooks(h, os.Args[1:])
 	} else if len(os.Args) == 1 {
 		showConfig()
 	} else if h, ok := hooks.GetCategory(os.Args[1]); ok {
-		runHooks(h)
+		runHooks(h, os.Args[2:])
 	} else if os.Args[1] == "install" {
 		install()
 	} else {
@@ -82,7 +82,7 @@ func main() {
 	}
 }
 
-func runHooks(category *hooks.Category) {
+func runHooks(category *hooks.Category, args []string) {
 	repo := openRepo()
 	files := repo.GetListOfNewAndModifiedFiles()
 
@@ -94,7 +94,7 @@ func runHooks(category *hooks.Category) {
 
 	fmt.Println("Running hooks for", category.Name)
 	for _, h := range category.Hooks {
-		h.Run(files)
+		h.Run(files, args)
 	}
 }
 
@@ -134,7 +134,7 @@ func install() {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	hookDir, err := gitDir.Chroot("hooks")
 	if err != nil {
 		panic(err)

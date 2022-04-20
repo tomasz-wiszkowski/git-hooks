@@ -8,6 +8,11 @@ var kKnownHooks = HookConfig{
 		Name:  "Post-commit hooks",
 		Hooks: POST_COMMIT_HOOKS,
 	},
+	"commit-msg": &Category{
+		ID:    "commit-msg",
+		Name:  "Commit Msg hooks",
+		Hooks: COMMIT_MSG_HOOKS,
+	},
 }
 
 func GetHookConfig() *HookConfig {

@@ -5,7 +5,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	raw "github.com/go-git/go-git/v5/plumbing/format/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/tomasz-wiszkowski/go-hookcfg/hooks"
 )
@@ -72,18 +71,14 @@ func (g *GitRepo) GetListOfNewAndModifiedFiles() []string {
 		panic(err)
 	}
 
-	tree, err := commit.Tree()
+	stats, err := commit.Stats()
 	if err != nil {
 		panic(err)
 	}
-
-	iter := tree.Files()
 	var paths []string
-	iter.ForEach(func(file *object.File) error {
-		paths = append(paths, file.Name)
-		return nil
-	})
-	iter.Close()
+	for _, f := range stats {
+		paths = append(paths, f.Name)
+	}
 
 	return paths
 }

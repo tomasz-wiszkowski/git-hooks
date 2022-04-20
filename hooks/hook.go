@@ -7,7 +7,7 @@ type Hook interface {
 	IsSelected() bool
 	IsAvailable() bool
 	SetConfig(Config)
-	Run(file []string)
+	Run(file []string, args []string)
 }
 
 type ConfigStore interface {

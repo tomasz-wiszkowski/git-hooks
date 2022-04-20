@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -50,4 +51,28 @@ func runShellCommand(args []string) (stdout, stderr string) {
 	outStr := strings.TrimSpace(outb.String())
 	errStr := strings.TrimSpace(errb.String())
 	return outStr, errStr
+}
+
+/// Substitute arguments and construct a command line
+///
+/// @param inputCmdLine Input set of arguments (including command)
+/// @param substituteArgs Map of substitute arguments. Key is the placeholder value, and Value is the replacement args.
+/// @reutrn Resulting CommandLine.
+func substituteCommandLine(inputCmdLine []string, substituteArgs map[string]interface{}) []string {
+	out := []string{}
+
+	for _, arg := range inputCmdLine {
+		if sub, ok := substituteArgs[arg]; ok {
+			if str, ok := sub.(string); ok {
+				out = append(out, str)
+			} else if strArr, ok := sub.([]string); ok {
+				out = append(out, strArr...)
+			} else {
+				panic(fmt.Sprintf("Unknown value type for key %s", arg))
+			}
+		} else {
+			out = append(out, arg)
+		}
+	}
+	return out
 }

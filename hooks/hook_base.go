@@ -16,21 +16,31 @@ const (
 )
 
 const (
-	///
-	/// Configuration keys
-	///
+	//
+	// Configuration keys
+	//
 
 	/// Configuration key controlling whether hook is enabled.
 	keyEnabled = "enabled"
 	/// Configuration key controlling the substitute command path.
 	keyCommand = "cmd"
 
-	///
-	/// Values
-	///
+	//
+	// Values
+	//
 
 	/// Value indicating boolean true
 	valueTrue = "true"
+
+	//
+	// Argument placeholders
+	//
+
+	/// Placeholder for a single matching file name.
+	placeholderSingleFile = "<file>"
+
+	/// Placeholder for hook arguments, as supplied by Git.
+	placeholderGitArgs = "<args>"
 )
 
 /// hookBase is a convenient do-it-all class that can be instantiated to execute tools from shell.
@@ -97,13 +107,17 @@ func (h *hookBase) Name() string {
 /// Execute an action associated with the hook on the supplied list of files.
 /// Each file is matched against the previously supplied filePattern.
 /// Performs no operation if the hook is not selected, or if the corresponding command does not exist.
-func (h *hookBase) Run(files []string) {
+func (h *hookBase) Run(files []string, args []string) {
 	if !h.IsSelected() {
 		return
 	}
 	if !h.IsAvailable() {
 		fmt.Println("Cannot run", h.Name(), "- missing command", h.shellCommand[0])
 		return
+	}
+
+	substitutions := map[string]interface{}{
+		placeholderGitArgs: args,
 	}
 
 	for _, file := range files {
@@ -113,14 +127,13 @@ func (h *hookBase) Run(files []string) {
 			continue
 		}
 
-		var cmd []string
+		substitutions[placeholderSingleFile] = file
+		cmd := substituteCommandLine(h.shellCommand, substitutions)
 
 		if h.runType == runPerCommit {
 			fmt.Println("Running", h.name)
-			cmd = h.shellCommand
 		} else if h.runType == runPerFile {
 			fmt.Println("Running", h.name, "on", file)
-			cmd = append(h.shellCommand, file)
 		}
 
 		sout, serr := runShellCommand(cmd)
