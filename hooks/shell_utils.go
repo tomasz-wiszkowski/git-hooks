@@ -44,12 +44,14 @@ func runShellCommand(args []string) (stdout, stderr string) {
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
 	err := cmd.Run()
-	if err != nil {
-		panic(err)
-	}
-
 	outStr := strings.TrimSpace(outb.String())
 	errStr := strings.TrimSpace(errb.String())
+	if err != nil {
+		fmt.Println("*** Command failed ***")
+		fmt.Println(outStr)
+		fmt.Println(errStr)
+	}
+
 	return outStr, errStr
 }
 
