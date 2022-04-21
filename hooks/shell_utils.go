@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+
+	"github.com/tomasz-wiszkowski/go-hookcfg/log"
 )
 
 /// Resolve executable name into full path.
@@ -21,9 +23,7 @@ func getShellCommandAbsolutePath(executableName string) (bool, string) {
 	}
 
 	workDir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
+	log.Check(err, "Resolve: cannot determine current dir")
 
 	absPath = path.Join(workDir, executableName)
 	_, err = os.Stat(absPath)

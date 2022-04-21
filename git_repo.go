@@ -9,6 +9,7 @@ import (
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
 	"github.com/tomasz-wiszkowski/go-hookcfg/hooks"
+	"github.com/tomasz-wiszkowski/go-hookcfg/log"
 )
 
 type GitRepo struct {
@@ -25,14 +26,10 @@ type GitSection struct {
 
 func GitRepoOpen() *GitRepo {
 	r, err := git.PlainOpenWithOptions(".", &git.PlainOpenOptions{DetectDotGit: true})
-	if err != nil {
-		panic(err)
-	}
+	log.Check(err, "Git: cannot open repository")
 
 	c, err := r.Config()
-	if err != nil {
-		panic(err)
-	}
+	log.Check(err, "Git: cannot query repository config")
 
 	return &GitRepo{
 		repo:   r,
@@ -42,9 +39,7 @@ func GitRepoOpen() *GitRepo {
 
 func (g *GitRepo) WorkDir() billy.Filesystem {
 	wt, err := g.repo.Worktree()
-	if err != nil {
-		panic(err)
-	}
+	log.Check(err, "Git: no worktree")
 
 	return wt.Filesystem
 }
@@ -57,36 +52,34 @@ func (g *GitRepo) GitDir() billy.Filesystem {
 
 func (g *GitRepo) SaveConfig() {
 	err := g.repo.SetConfig(g.config)
-	if err != nil {
-		panic(err)
-	}
+	log.Check(err, "Git: failed to save config")
 }
 
 /// Query the top-most commit and collect the list of modified files.
 func (g *GitRepo) GetListOfNewAndModifiedFiles() []string {
 	head, err := g.repo.Head()
-	Check(err, "Git: Can't Query HEAD")
+	log.Check(err, "Git: Can't Query HEAD")
 
 	commit, err := g.repo.CommitObject(head.Hash())
-	Check(err, "Git: Can't Get top commit")
+	log.Check(err, "Git: Can't Get top commit")
 
 	parent, err := commit.Parent(0)
-	Check(err, "Git: Can't Get parent commit")
+	log.Check(err, "Git: Can't Get parent commit")
 
 	tree1, err := commit.Tree()
-	Check(err, "Git: Can't Get current tree")
+	log.Check(err, "Git: Can't Get current tree")
 
 	tree2, err := parent.Tree()
-	Check(err, "Git: Can't Get parent tree")
+	log.Check(err, "Git: Can't Get parent tree")
 
 	// Make sure the order is correct - (from, to)
 	changes, err := object.DiffTree(tree2, tree1)
-	Check(err, "Git: Unable to Diff trees")
+	log.Check(err, "Git: Unable to Diff trees")
 
 	var paths []string
 	for _, c := range changes {
 		action, err := c.Action()
-		Check(err, "Git: Unable to query Action on file %s/%s", c.From.Name, c.To.Name)
+		log.Check(err, "Git: Unable to query Action on file %s/%s", c.From.Name, c.To.Name)
 
 		switch action {
 		case merkletrie.Delete:

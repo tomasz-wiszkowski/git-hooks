@@ -9,6 +9,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/tomasz-wiszkowski/go-hookcfg/hooks"
+	"github.com/tomasz-wiszkowski/go-hookcfg/log"
 )
 
 type Reference struct {
@@ -88,7 +89,7 @@ func runHooks(category *hooks.Category, args []string) {
 
 	// Used by hooks install, file fixing and others
 	err := os.Chdir(repo.WorkDir().Root())
-	Check(err, "Run: cannot open work directory")
+	log.Check(err, "Run: cannot open work directory")
 
 	for _, h := range category.Hooks {
 		h.Run(files, args)
@@ -112,35 +113,35 @@ func showConfig() {
 	})
 
 	err := app.Run()
-	Check(err, "Run: terminated abnormally")
+	log.Check(err, "Run: terminated abnormally")
 
 	repo.SaveConfig()
 }
 
 func install() {
 	selfAbsolutePath, err := filepath.Abs(os.Args[0])
-	Check(err, "Install: cannot locate self")
+	log.Check(err, "Install: cannot locate self")
 
 	repo := openRepo()
 	gitDir := repo.GitDir()
 
 	err = gitDir.MkdirAll("hooks", 0755)
-	Check(err, "Install: failed to create hooks directory")
+	log.Check(err, "Install: failed to create hooks directory")
 
 	hookDir, err := gitDir.Chroot("hooks")
-	Check(err, "Install: failed to navigate to hooks directory")
+	log.Check(err, "Install: failed to navigate to hooks directory")
 
 	for _, category := range *hooks.GetHookConfig() {
 		fmt.Println("Installing", category.ID, "in", hookDir.Root(), "pointing to", selfAbsolutePath)
 		if _, err = hookDir.Stat(category.ID); err == nil {
 			err = hookDir.Remove(category.ID)
 			if err != nil && err != os.ErrNotExist {
-				Check(err, "Install: failed to remove hook %s", category)
+				log.Check(err, "Install: failed to remove hook %s", category)
 			}
 		}
 
 		err = os.Symlink(selfAbsolutePath, hookDir.Join(hookDir.Root(), category.ID))
-		Check(err, "Install: failed to install hook %s", category)
+		log.Check(err, "Install: failed to install hook %s", category)
 	}
 
 	showConfig()
