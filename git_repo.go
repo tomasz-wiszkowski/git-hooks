@@ -5,7 +5,9 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	raw "github.com/go-git/go-git/v5/plumbing/format/config"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/filesystem"
+	"github.com/go-git/go-git/v5/utils/merkletrie"
 	"github.com/tomasz-wiszkowski/go-hookcfg/hooks"
 )
 
@@ -60,24 +62,40 @@ func (g *GitRepo) SaveConfig() {
 	}
 }
 
+/// Query the top-most commit and collect the list of modified files.
 func (g *GitRepo) GetListOfNewAndModifiedFiles() []string {
 	head, err := g.repo.Head()
-	if err != nil {
-		panic(err)
-	}
+	Check(err, "Git: Can't Query HEAD")
 
 	commit, err := g.repo.CommitObject(head.Hash())
-	if err != nil {
-		panic(err)
-	}
+	Check(err, "Git: Can't Get top commit")
 
-	stats, err := commit.Stats()
-	if err != nil {
-		panic(err)
-	}
+	parent, err := commit.Parent(0)
+	Check(err, "Git: Can't Get parent commit")
+
+	tree1, err := commit.Tree()
+	Check(err, "Git: Can't Get current tree")
+
+	tree2, err := parent.Tree()
+	Check(err, "Git: Can't Get parent tree")
+
+	// Make sure the order is correct - (from, to)
+	changes, err := object.DiffTree(tree2, tree1)
+	Check(err, "Git: Unable to Diff trees")
+
 	var paths []string
-	for _, f := range stats {
-		paths = append(paths, f.Name)
+	for _, c := range changes {
+		action, err := c.Action()
+		Check(err, "Git: Unable to query Action on file %s/%s", c.From.Name, c.To.Name)
+
+		switch action {
+		case merkletrie.Delete:
+			continue
+		case merkletrie.Insert:
+			fallthrough
+		case merkletrie.Modify:
+			paths = append(paths, c.To.Name)
+		}
 	}
 
 	return paths

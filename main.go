@@ -88,11 +88,8 @@ func runHooks(category *hooks.Category, args []string) {
 
 	// Used by hooks install, file fixing and others
 	err := os.Chdir(repo.WorkDir().Root())
-	if err != nil {
-		panic(err)
-	}
+	Check(err, "Run: cannot open work directory")
 
-	fmt.Println("Running hooks for", category.Name)
 	for _, h := range category.Hooks {
 		h.Run(files, args)
 	}
@@ -114,44 +111,36 @@ func showConfig() {
 		return event
 	})
 
-	if err := app.Run(); err != nil {
-		panic(err)
-	}
+	err := app.Run()
+	Check(err, "Run: terminated abnormally")
 
 	repo.SaveConfig()
-	fmt.Println("Farewell")
 }
 
 func install() {
 	selfAbsolutePath, err := filepath.Abs(os.Args[0])
-	if err != nil {
-		panic(err)
-	}
+	Check(err, "Install: cannot locate self")
+
 	repo := openRepo()
 	gitDir := repo.GitDir()
 
 	err = gitDir.MkdirAll("hooks", 0755)
-	if err != nil {
-		panic(err)
-	}
+	Check(err, "Install: failed to create hooks directory")
 
 	hookDir, err := gitDir.Chroot("hooks")
-	if err != nil {
-		panic(err)
-	}
+	Check(err, "Install: failed to navigate to hooks directory")
+
 	for _, category := range *hooks.GetHookConfig() {
 		fmt.Println("Installing", category.ID, "in", hookDir.Root(), "pointing to", selfAbsolutePath)
 		if _, err = hookDir.Stat(category.ID); err == nil {
 			err = hookDir.Remove(category.ID)
 			if err != nil && err != os.ErrNotExist {
-				panic(err)
+				Check(err, "Install: failed to remove hook %s", category)
 			}
 		}
 
 		err = os.Symlink(selfAbsolutePath, hookDir.Join(hookDir.Root(), category.ID))
-		if err != nil {
-			panic(err)
-		}
+		Check(err, "Install: failed to install hook %s", category)
 	}
 
 	showConfig()
