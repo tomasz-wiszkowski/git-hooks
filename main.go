@@ -19,7 +19,7 @@ type Reference struct {
 func add(target *tview.TreeNode, ref *Reference) {
 	if ref.category == nil {
 		for _, c := range *hooks.GetHookConfig() {
-			node := tview.NewTreeNode(c.ID).SetReference(&Reference{c, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
+			node := tview.NewTreeNode(c.Name).SetReference(&Reference{c, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
 			target.AddChild(node)
 			add(node, node.GetReference().(*Reference))
 		}
