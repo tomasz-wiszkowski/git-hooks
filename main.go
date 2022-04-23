@@ -68,6 +68,8 @@ func openRepo() *GitRepo {
 }
 
 func main() {
+	hooks.Init()
+
 	selfName := path.Base(os.Args[0])
 
 	if h, ok := hooks.GetCategory(selfName); ok {

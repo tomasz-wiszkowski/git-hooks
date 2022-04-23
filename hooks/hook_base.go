@@ -10,7 +10,7 @@ type RunType int8
 
 const (
 	/// Run once per commit.
-	runPerCommit = iota
+	runPerCommit RunType = iota
 	/// Run once per file.
 	runPerFile
 )

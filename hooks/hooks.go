@@ -2,17 +2,10 @@ package hooks
 
 type HookConfig map[string]*Category
 
-var kKnownHooks = HookConfig{
-	"post-commit": &Category{
-		ID:    "post-commit",
-		Name:  "Post-commit hooks",
-		Hooks: POST_COMMIT_HOOKS,
-	},
-	"commit-msg": &Category{
-		ID:    "commit-msg",
-		Name:  "Commit Msg hooks",
-		Hooks: COMMIT_MSG_HOOKS,
-	},
+var kKnownHooks = HookConfig{}
+
+func Init() {
+	kKnownHooks = loadConfigFile()
 }
 
 func GetHookConfig() *HookConfig {
