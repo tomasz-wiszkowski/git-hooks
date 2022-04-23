@@ -82,7 +82,7 @@ func loadConfigFile() map[string]*Category {
 			log.Assert(len(hv.Name) > 0, "Invalid hook name for hook %s", hk)
 			log.Assert(len(hv.ShellCmd) > 0, "Invalid shell command for hook %s", hk)
 
-			hook := newHookBase(hk, hv.Name, hv.Pattern, hv.ShellCmd, runType)
+			hook := newShellHook(hk, hv.Name, hv.Pattern, hv.ShellCmd, runType)
 			hooks = append(hooks, hook)
 		}
 
