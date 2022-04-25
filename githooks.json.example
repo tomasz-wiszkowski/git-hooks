@@ -26,7 +26,7 @@
                     "shellCmd": ["gofmt", "-w", "<file>"]
                 },
                 "GoVet": {
-                    "name": "Golang Format",
+                    "name": "Golang Vet",
                     "runType": "perCommit",
                     "priority": 0,
                     "filePattern": "\\.go$", 
@@ -40,7 +40,7 @@
                     "shellCmd": ["go", "mod", "tidy"]
                 },
                 "JavaImportFmt": {
-                    "name": "Java Import Format",
+                    "name": "Java Format and Sort Imports",
                     "runType": "perFile",
                     "priority": 0,
                     "filePattern": "\\.java$", 
@@ -61,47 +61,11 @@
                     "shellCmd": ["rustfmt", "<file>"]
                 },
                 "RustTidy": {
-                    "name": "Rust Tidy",
+                    "name": "Rust Clippy",
                     "runType": "perFile",
                     "priority": 0,
                     "filePattern": "\\.rs$", 
                     "shellCmd": ["cargo", "clippy", "--fix", "<file>"]
-                },
-
-                "ChromeClFmt": {
-                    "name": "Chrome: CL Format",
-                    "runType": "perCommit",
-                    "priority": -2,
-                    "filePattern": ".", 
-                    "shellCmd": ["git-cl", "format"]
-                },
-                "ChromeClPresubmit": {
-                    "name": "Chrome: CL Presubmit",
-                    "runType": "perCommit",
-                    "priority": -1,
-                    "filePattern": ".", 
-                    "shellCmd": ["git-cl", "presubmit"]
-                },
-                "ChromeGnDeps": {
-                    "name": "Chrome: GN CheckDeps",
-                    "runType": "perCommit",
-                    "priority": 0,
-                    "filePattern": "^(.*\\.gn[i]?|DEPS)$", 
-                    "shellCmd": ["gn", "gen", "out/android.debug.arm", "--check"]
-                },
-                "ChromeFieldtrialFmt": {
-                    "name": "Chrome: Fieldtrial Testing Config Format",
-                    "runType": "perCommit",
-                    "priority": 0,
-                    "filePattern": "^fieldtrial_testing_config\\.json$", 
-                    "shellCmd": ["testing/variations/PRESUBMIT.py"]
-                },
-                "ChromeHistogramsFmt": {
-                    "name": "Chrome: Histogram Config Format",
-                    "runType": "perFile",
-                    "priority": 0,
-                    "filePattern": "^(histograms|enums)\\.xml$", 
-                    "shellCmd": ["tools/metrics/histograms/validate_format.py", "<file>"]
                 }
             }
         },
@@ -114,13 +78,6 @@
                     "priority": 0,
                     "filePattern": ".", 
                     "shellCmd": ["git-add-changeid", "<args>"]
-                },
-                "ReflowCommitMsg": {
-                    "name": "Git: Reflow commit message",
-                    "runType": "perCommit",
-                    "priority": 0,
-                    "filePattern": ".", 
-                    "shellCmd": ["fmt", "-g", "70", "<args>"]
                 }
             }
         }
