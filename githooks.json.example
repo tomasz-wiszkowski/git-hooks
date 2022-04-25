@@ -1,9 +1,9 @@
 {
     "version": 1,
-    "categories": {
+    "hooks": {
         "post-commit": {
             "name": "Post-commit hooks",
-            "hooks": {
+            "actions": {
                 "ClangFmt": {
                     "name": "Clang Format",
                     "runType": "perFile",
@@ -71,7 +71,7 @@
         },
         "commit-msg": {
             "name": "Edit Commit Message hooks",
-            "hooks": {
+            "actions": {
                 "GerritChangeId": {
                     "name": "Gerrit: Add ChangeId tag",
                     "runType": "perCommit",

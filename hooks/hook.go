@@ -3,21 +3,30 @@ package hooks
 type Hook interface {
 	ID() string
 	Name() string
-	Priority() int32
-	SetSelected(bool)
-	IsSelected() bool
-	IsAvailable() bool
-	SetConfig(Config)
-	Run(file []string, args []string)
+	Actions() []Action
+	SetConfigStore(ConfigStore)
 }
 
-type ConfigStore interface {
-	GetConfigFor(section, subsection string) Config
+type hook struct {
+	id      string
+	name    string
+	actions []Action
 }
 
-type Config interface {
-	Set(key, value string)
-	Has(key string) bool
-	GetOrDefault(key, dflt string) string
-	Remove(key string)
+func (c *hook) ID() string {
+	return c.id
+}
+
+func (c *hook) Name() string {
+	return c.name
+}
+
+func (c *hook) Actions() []Action {
+	return c.actions
+}
+
+func (c *hook) SetConfigStore(store ConfigStore) {
+	for _, h := range c.Actions() {
+		h.SetConfig(store.GetConfigFor(c.ID(), h.ID()))
+	}
 }

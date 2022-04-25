@@ -43,8 +43,8 @@ const (
 	placeholderGitArgs = "<args>"
 )
 
-/// shellHook is a convenient do-it-all class that can be instantiated to execute tools from shell.
-type shellHook struct {
+/// shellAction is a convenient do-it-all class that can be instantiated to execute tools from shell.
+type shellAction struct {
 	/// Unique ID of the hook. Not enforced.
 	id string
 	/// Human-readable name of the hook.
@@ -65,16 +65,16 @@ type shellHook struct {
 	config Config
 }
 
-/// Create a new shellHook object from the supplied pieces.
+/// Create a new shellAction object from the supplied pieces.
 ///
 /// @param id The unique ID of the hook.
 /// @param name Human readable name.
 /// @param priority Execution priority.
-/// @param filePattern Regexp used for file matching. Hook will only run if a match is detected.
+/// @param filePattern Regexp used for file matching. Action will only run if a match is detected.
 /// @param runType How to execute the hook.
-/// @return Newly created shellHook object.
-func newShellHook(id, name string, priority int32, filePattern string, shellCmd []string, runType RunType) *shellHook {
-	hb := &shellHook{
+/// @return Newly created shellAction object.
+func newShellAction(id, name string, priority int32, filePattern string, shellCmd []string, runType RunType) *shellAction {
+	hb := &shellAction{
 		id:           id,
 		name:         name,
 		priority:     priority,
@@ -90,7 +90,7 @@ func newShellHook(id, name string, priority int32, filePattern string, shellCmd 
 }
 
 /// Specify the command to be run for this hook
-func (h *shellHook) setShellCmd(cmd string) {
+func (h *shellAction) setShellCmd(cmd string) {
 	available, command := getShellCommandAbsolutePath(cmd)
 	if available {
 		h.shellCommand[0] = command
@@ -99,24 +99,24 @@ func (h *shellHook) setShellCmd(cmd string) {
 }
 
 /// @return An unique ID of this hook.
-func (h *shellHook) ID() string {
+func (h *shellAction) ID() string {
 	return h.id
 }
 
 /// @return Human readable name of the hook.
-func (h *shellHook) Name() string {
+func (h *shellAction) Name() string {
 	return h.name
 }
 
 /// @return Priority of the hook. Lower number = higher priority.
-func (h *shellHook) Priority() int32 {
+func (h *shellAction) Priority() int32 {
 	return h.priority
 }
 
 /// Execute an action associated with the hook on the supplied list of files.
 /// Each file is matched against the previously supplied filePattern.
 /// Performs no operation if the hook is not selected, or if the corresponding command does not exist.
-func (h *shellHook) Run(files []string, args []string) {
+func (h *shellAction) Run(files []string, args []string) {
 	if !h.IsSelected() {
 		return
 	}
@@ -160,19 +160,19 @@ func (h *shellHook) Run(files []string, args []string) {
 }
 
 /// @return Whether the hook is requested to be run.
-func (h *shellHook) IsSelected() bool {
+func (h *shellAction) IsSelected() bool {
 	return h.selected
 }
 
 /// @return Whether the hook can be run.
-func (h *shellHook) IsAvailable() bool {
+func (h *shellAction) IsAvailable() bool {
 	return h.available
 }
 
 /// Modify the selected state of the hook.
 ///
 /// @param wantSelected Whether the hook should be selected.
-func (h *shellHook) SetSelected(wantSelected bool) {
+func (h *shellAction) SetSelected(wantSelected bool) {
 	h.selected = wantSelected
 
 	if wantSelected {
@@ -185,7 +185,7 @@ func (h *shellHook) SetSelected(wantSelected bool) {
 /// Specify the configuration section responsible for managing the hook data.
 ///
 /// @param cfg The configuration storer for the hook data.
-func (h *shellHook) SetConfig(cfg Config) {
+func (h *shellAction) SetConfig(cfg Config) {
 	h.config = cfg
 	if cfg == nil {
 		panic("No config section")

@@ -13,53 +13,53 @@ import (
 )
 
 type Reference struct {
-	category hooks.Category
-	hook     hooks.Hook
+	hook   hooks.Hook
+	action hooks.Action
 }
 
 func add(target *tview.TreeNode, ref *Reference) {
-	if ref.category == nil {
-		categories := []hooks.Category{}
-		for _, c := range *hooks.GetHookConfig() {
-			categories = append(categories, c)
+	if ref.hook == nil {
+		hks := []hooks.Hook{}
+		for _, c := range hooks.GetHookConfig() {
+			hks = append(hks, c)
 		}
-		SortInPlaceByName(categories)
+		SortInPlaceByName(hks)
 
-		for _, c := range categories {
+		for _, c := range hks {
 			node := tview.NewTreeNode(c.Name()).SetReference(&Reference{c, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
 			target.AddChild(node)
 			add(node, node.GetReference().(*Reference))
 		}
-	} else if ref.hook == nil {
-		hooks := ref.category.Hooks()
-		SortInPlaceByName(hooks)
+	} else if ref.action == nil {
+		actions := ref.hook.Actions()
+		SortInPlaceByName(actions)
 
-		for _, h := range hooks {
-			node := tview.NewTreeNode("").SetReference(&Reference{ref.category, h}).SetSelectable(true)
+		for _, h := range actions {
+			node := tview.NewTreeNode("").SetReference(&Reference{ref.hook, h}).SetSelectable(true)
 			updateTreeNode(h, node)
 			target.AddChild(node)
 		}
 	}
 }
 
-func updateTreeNode(hook hooks.Hook, node *tview.TreeNode) {
+func updateTreeNode(action hooks.Action, node *tview.TreeNode) {
 	var marker rune
-	if !hook.IsSelected() {
+	if !action.IsSelected() {
 		marker = ' '
-	} else if !hook.IsAvailable() {
+	} else if !action.IsAvailable() {
 		marker = '✘'
 	} else /* selected and available */ {
 		marker = '✔'
 	}
 
-	node.SetText(fmt.Sprintf("[%c] %s", marker, hook.Name()))
+	node.SetText(fmt.Sprintf("[%c] %s", marker, action.Name()))
 }
 
 func onTreeNodeSelected(node *tview.TreeNode) {
 	reference := node.GetReference().(*Reference)
 
 	// Check if node or leaf. Nodes have no hook references.
-	if hook := reference.hook; hook == nil {
+	if hook := reference.action; hook == nil {
 		// This is a node.
 		// Collapse if visible, expand if collapsed.
 		node.SetExpanded(!node.IsExpanded())
@@ -81,11 +81,11 @@ func main() {
 
 	selfName := path.Base(os.Args[0])
 
-	if h, ok := hooks.GetCategory(selfName); ok {
+	if h, ok := hooks.GetHook(selfName); ok {
 		runHooks(h, os.Args[1:])
 	} else if len(os.Args) == 1 {
 		showConfig()
-	} else if h, ok := hooks.GetCategory(os.Args[1]); ok {
+	} else if h, ok := hooks.GetHook(os.Args[1]); ok {
 		runHooks(h, os.Args[2:])
 	} else if os.Args[1] == "install" {
 		install()
@@ -94,7 +94,7 @@ func main() {
 	}
 }
 
-func runHooks(category hooks.Category, args []string) {
+func runHooks(hook hooks.Hook, args []string) {
 	repo := openRepo()
 	files := repo.GetListOfNewAndModifiedFiles()
 
@@ -102,9 +102,9 @@ func runHooks(category hooks.Category, args []string) {
 	err := os.Chdir(repo.WorkDir().Root())
 	log.Check(err, "Run: cannot open work directory")
 
-	hooks := category.Hooks()
-	SortInPlaceByPriority(hooks)
-	for _, h := range hooks {
+	actions := hook.Actions()
+	SortInPlaceByPriority(actions)
+	for _, h := range actions {
 		h.Run(files, args)
 	}
 }
@@ -144,17 +144,17 @@ func install() {
 	hookDir, err := gitDir.Chroot("hooks")
 	log.Check(err, "Install: failed to navigate to hooks directory")
 
-	for _, category := range *hooks.GetHookConfig() {
-		fmt.Println("Installing", category.ID(), "in", hookDir.Root(), "pointing to", selfAbsolutePath)
-		if _, err = hookDir.Stat(category.ID()); err == nil {
-			err = hookDir.Remove(category.ID())
+	for _, hook := range hooks.GetHookConfig() {
+		fmt.Println("Installing", hook.ID(), "in", hookDir.Root(), "pointing to", selfAbsolutePath)
+		if _, err = hookDir.Stat(hook.ID()); err == nil {
+			err = hookDir.Remove(hook.ID())
 			if err != nil && err != os.ErrNotExist {
-				log.Check(err, "Install: failed to remove hook %s", category)
+				log.Check(err, "Install: failed to remove hook %s", hook)
 			}
 		}
 
-		err = os.Symlink(selfAbsolutePath, hookDir.Join(hookDir.Root(), category.ID()))
-		log.Check(err, "Install: failed to install hook %s", category)
+		err = os.Symlink(selfAbsolutePath, hookDir.Join(hookDir.Root(), hook.ID()))
+		log.Check(err, "Install: failed to install hook %s", hook)
 	}
 
 	showConfig()
