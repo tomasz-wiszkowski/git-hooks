@@ -49,6 +49,8 @@ type shellHook struct {
 	id string
 	/// Human-readable name of the hook.
 	name string
+	/// Execution prioirty.
+	priority int32
 	/// Regexp pattern for file matching. This hook will execute only if appropriate matches are found.
 	filePattern *regexp.Regexp
 	/// Shell command and arguments.
@@ -67,13 +69,15 @@ type shellHook struct {
 ///
 /// @param id The unique ID of the hook.
 /// @param name Human readable name.
+/// @param priority Execution priority.
 /// @param filePattern Regexp used for file matching. Hook will only run if a match is detected.
 /// @param runType How to execute the hook.
 /// @return Newly created shellHook object.
-func newShellHook(id, name, filePattern string, shellCmd []string, runType RunType) *shellHook {
+func newShellHook(id, name string, priority int32, filePattern string, shellCmd []string, runType RunType) *shellHook {
 	hb := &shellHook{
 		id:           id,
 		name:         name,
+		priority:     priority,
 		filePattern:  regexp.MustCompile(filePattern),
 		available:    false,
 		shellCommand: shellCmd,
@@ -102,6 +106,11 @@ func (h *shellHook) ID() string {
 /// @return Human readable name of the hook.
 func (h *shellHook) Name() string {
 	return h.name
+}
+
+/// @return Priority of the hook. Lower number = higher priority.
+func (h *shellHook) Priority() int32 {
+	return h.priority
 }
 
 /// Execute an action associated with the hook on the supplied list of files.

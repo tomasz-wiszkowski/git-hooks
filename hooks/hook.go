@@ -3,6 +3,7 @@ package hooks
 type Hook interface {
 	ID() string
 	Name() string
+	Priority() int32
 	SetSelected(bool)
 	IsSelected() bool
 	IsAvailable() bool

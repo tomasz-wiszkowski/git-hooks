@@ -1,6 +1,6 @@
 package hooks
 
-type HookConfig map[string]*Category
+type HookConfig map[string]Category
 
 var kKnownHooks = HookConfig{}
 
@@ -18,7 +18,7 @@ func SetConfigStore(store ConfigStore) {
 	}
 }
 
-func GetCategory(name string) (*Category, bool) {
+func GetCategory(name string) (Category, bool) {
 	cat, ok := kKnownHooks[name]
 	return cat, ok
 }
