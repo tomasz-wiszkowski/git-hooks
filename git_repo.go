@@ -8,8 +8,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/go-git/go-git/v5/utils/merkletrie"
-	"github.com/tomasz-wiszkowski/go-hookcfg/hooks"
-	"github.com/tomasz-wiszkowski/go-hookcfg/log"
+	"github.com/tomasz-wiszkowski/git-hooks/hooks"
+	"github.com/tomasz-wiszkowski/git-hooks/log"
 )
 
 type GitRepo struct {

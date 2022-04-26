@@ -8,34 +8,35 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/tomasz-wiszkowski/go-hookcfg/hooks"
-	"github.com/tomasz-wiszkowski/go-hookcfg/log"
+	"github.com/tomasz-wiszkowski/git-hooks/hooks"
+	"github.com/tomasz-wiszkowski/git-hooks/log"
+	"github.com/tomasz-wiszkowski/git-hooks/sort"
 )
 
-type Reference struct {
+type reference struct {
 	hook   hooks.Hook
 	action hooks.Action
 }
 
-func add(target *tview.TreeNode, ref *Reference) {
+func add(target *tview.TreeNode, ref *reference) {
 	if ref.hook == nil {
 		hks := []hooks.Hook{}
 		for _, c := range hooks.GetHookConfig() {
 			hks = append(hks, c)
 		}
-		SortInPlaceByName(hks)
+		sort.SortInPlaceByName(hks)
 
 		for _, c := range hks {
-			node := tview.NewTreeNode(c.Name()).SetReference(&Reference{c, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
+			node := tview.NewTreeNode(c.Name()).SetReference(&reference{c, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
 			target.AddChild(node)
-			add(node, node.GetReference().(*Reference))
+			add(node, node.GetReference().(*reference))
 		}
 	} else if ref.action == nil {
 		actions := ref.hook.Actions()
-		SortInPlaceByName(actions)
+		sort.SortInPlaceByName(actions)
 
 		for _, h := range actions {
-			node := tview.NewTreeNode("").SetReference(&Reference{ref.hook, h}).SetSelectable(true)
+			node := tview.NewTreeNode("").SetReference(&reference{ref.hook, h}).SetSelectable(true)
 			updateTreeNode(h, node)
 			target.AddChild(node)
 		}
@@ -56,7 +57,7 @@ func updateTreeNode(action hooks.Action, node *tview.TreeNode) {
 }
 
 func onTreeNodeSelected(node *tview.TreeNode) {
-	reference := node.GetReference().(*Reference)
+	reference := node.GetReference().(*reference)
 
 	// Check if node or leaf. Nodes have no hook references.
 	if hook := reference.action; hook == nil {
@@ -103,7 +104,7 @@ func runHooks(hook hooks.Hook, args []string) {
 	log.Check(err, "Run: cannot open work directory")
 
 	actions := hook.Actions()
-	SortInPlaceByPriority(actions)
+	sort.SortInPlaceByPriority(actions)
 	for _, h := range actions {
 		h.Run(files, args)
 	}
@@ -114,7 +115,7 @@ func showConfig() {
 	root := tview.NewTreeNode("Hooks").SetColor(tcell.ColorGrey)
 	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
 	tree.SetSelectedFunc(onTreeNodeSelected)
-	add(root, &Reference{nil, nil})
+	add(root, &reference{nil, nil})
 
 	app := tview.NewApplication()
 	app.SetRoot(tree, true).EnableMouse(true)

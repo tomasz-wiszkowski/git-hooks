@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/tomasz-wiszkowski/go-hookcfg/log"
+	"github.com/tomasz-wiszkowski/git-hooks/log"
 )
 
 /// Resolve executable name into full path.

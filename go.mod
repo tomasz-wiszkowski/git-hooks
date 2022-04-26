@@ -1,4 +1,4 @@
-module github.com/tomasz-wiszkowski/go-hookcfg
+module github.com/tomasz-wiszkowski/git-hooks
 
 go 1.18
 

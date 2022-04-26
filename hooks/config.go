@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/tomasz-wiszkowski/go-hookcfg/log"
+	"github.com/tomasz-wiszkowski/git-hooks/log"
 )
 
 const (
