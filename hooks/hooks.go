@@ -1,24 +1,25 @@
 package hooks
 
-type HookConfig map[string]Hook
+// A map of all known and user-defined hooks and their corresponding actions.
+// The key is the hook name, and the value is the corresponding Hook definition.
+type Hooks map[string]Hook
 
-var kKnownHooks = HookConfig{}
+var kKnownHooks Hooks = nil
 
-func Init() {
-	kKnownHooks = loadConfigFile()
-}
-
-func GetHookConfig() HookConfig {
+// Retrieve the map of user-defined hooks.
+// Upon first call the function will attempt to load user-defined hooks from
+// the ~/.githooks.json config file.
+func GetHooks() Hooks {
+	if kKnownHooks == nil {
+		kKnownHooks = loadConfigFile()
+	}
 	return kKnownHooks
 }
 
-func SetConfigStore(store ConfigStore) {
-	for _, hook := range kKnownHooks {
-		hook.SetConfigStore(store)
+// Specify the configuration store persisting action configuration relevant to
+// the current context (typically the current git repository).
+func (h Hooks) SetConfigStore(s ConfigStore) {
+	for _, hook := range h {
+		hook.SetConfigStore(s)
 	}
-}
-
-func GetHook(name string) (Hook, bool) {
-	cat, ok := kKnownHooks[name]
-	return cat, ok
 }

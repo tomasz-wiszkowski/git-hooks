@@ -21,7 +21,7 @@ type reference struct {
 func add(target *tview.TreeNode, ref *reference) {
 	if ref.hook == nil {
 		hks := []hooks.Hook{}
-		for _, c := range hooks.GetHookConfig() {
+		for _, c := range hooks.GetHooks() {
 			hks = append(hks, c)
 		}
 		sort.SortInPlaceByName(hks)
@@ -73,20 +73,19 @@ func onTreeNodeSelected(node *tview.TreeNode) {
 
 func openRepo() *GitRepo {
 	repo := GitRepoOpen()
-	hooks.SetConfigStore(repo)
+	hooks.GetHooks().SetConfigStore(repo)
 	return repo
 }
 
 func main() {
-	hooks.Init()
-
 	selfName := path.Base(os.Args[0])
+	hks := hooks.GetHooks()
 
-	if h, ok := hooks.GetHook(selfName); ok {
+	if h, ok := hks[selfName]; ok {
 		runHooks(h, os.Args[1:])
 	} else if len(os.Args) == 1 {
 		showConfig()
-	} else if h, ok := hooks.GetHook(os.Args[1]); ok {
+	} else if h, ok := hks[os.Args[1]]; ok {
 		runHooks(h, os.Args[2:])
 	} else if os.Args[1] == "install" {
 		install()
@@ -145,7 +144,7 @@ func install() {
 	hookDir, err := gitDir.Chroot("hooks")
 	log.Check(err, "Install: failed to navigate to hooks directory")
 
-	for _, hook := range hooks.GetHookConfig() {
+	for _, hook := range hooks.GetHooks() {
 		fmt.Println("Installing", hook.ID(), "in", hookDir.Root(), "pointing to", selfAbsolutePath)
 		if _, err = hookDir.Stat(hook.ID()); err == nil {
 			err = hookDir.Remove(hook.ID())
