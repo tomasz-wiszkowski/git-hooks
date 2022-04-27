@@ -1,5 +1,7 @@
 package hooks
 
+import "github.com/tomasz-wiszkowski/git-hooks/config"
+
 // A map of all known and user-defined hooks and their corresponding actions.
 // The key is the hook name, and the value is the corresponding Hook definition.
 type Hooks map[string]Hook
@@ -18,7 +20,7 @@ func GetHooks() Hooks {
 
 // Specify the configuration store persisting action configuration relevant to
 // the current context (typically the current git repository).
-func (h Hooks) SetConfigStore(s ConfigStore) {
+func (h Hooks) SetConfigStore(s config.ConfigManager) {
 	for _, hook := range h {
 		hook.SetConfigStore(s)
 	}

@@ -1,10 +1,12 @@
 package hooks
 
+import "github.com/tomasz-wiszkowski/git-hooks/config"
+
 type Hook interface {
 	ID() string
 	Name() string
 	Actions() []Action
-	SetConfigStore(ConfigStore)
+	SetConfigStore(config.ConfigManager)
 }
 
 type hook struct {
@@ -25,7 +27,7 @@ func (c *hook) Actions() []Action {
 	return c.actions
 }
 
-func (c *hook) SetConfigStore(store ConfigStore) {
+func (c *hook) SetConfigStore(store config.ConfigManager) {
 	for _, h := range c.Actions() {
 		h.SetConfig(store.GetConfigFor(c.ID(), h.ID()))
 	}

@@ -1,5 +1,7 @@
 package hooks
 
+import "github.com/tomasz-wiszkowski/git-hooks/config"
+
 type Action interface {
 	ID() string
 	Name() string
@@ -7,17 +9,6 @@ type Action interface {
 	SetSelected(bool)
 	IsSelected() bool
 	IsAvailable() bool
-	SetConfig(Config)
+	SetConfig(config.Config)
 	Run(file []string, args []string)
-}
-
-type ConfigStore interface {
-	GetConfigFor(section, subsection string) Config
-}
-
-type Config interface {
-	Set(key, value string)
-	Has(key string) bool
-	GetOrDefault(key, dflt string) string
-	Remove(key string)
 }

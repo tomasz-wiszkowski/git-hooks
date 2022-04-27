@@ -2,15 +2,18 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/rivo/tview"
 	"github.com/tomasz-wiszkowski/git-hooks/hooks"
-	"github.com/tomasz-wiszkowski/git-hooks/log"
+	"github.com/tomasz-wiszkowski/git-hooks/repo"
 	"github.com/tomasz-wiszkowski/git-hooks/sort"
+	"github.com/tomasz-wiszkowski/git-hooks/try"
 )
 
 type reference struct {
@@ -71,13 +74,15 @@ func onTreeNodeSelected(node *tview.TreeNode) {
 	}
 }
 
-func openRepo() *GitRepo {
-	repo := GitRepoOpen()
-	hooks.GetHooks().SetConfigStore(repo)
-	return repo
+func openRepo() repo.Repo {
+	r := repo.OpenRepo()
+	hooks.GetHooks().SetConfigStore(r.GetConfigManager())
+	return r
 }
 
 func main() {
+	log.Default().SetFlags(log.Ltime | log.Lshortfile)
+
 	selfName := path.Base(os.Args[0])
 	hks := hooks.GetHooks()
 
@@ -90,7 +95,7 @@ func main() {
 	} else if os.Args[1] == "install" {
 		install()
 	} else {
-		fmt.Println("Unknown hook type", os.Args[1])
+		log.Fatalln("Unknown hook type", os.Args[1])
 	}
 }
 
@@ -100,7 +105,7 @@ func runHooks(hook hooks.Hook, args []string) {
 
 	// Used by hooks install, file fixing and others
 	err := os.Chdir(repo.WorkDir().Root())
-	log.Check(err, "Run: cannot open work directory")
+	try.CheckErr(err, "Run: cannot open work directory")
 
 	actions := hook.Actions()
 	sort.SortInPlaceByPriority(actions)
@@ -126,35 +131,34 @@ func showConfig() {
 	})
 
 	err := app.Run()
-	log.Check(err, "Run: terminated abnormally")
-
-	repo.SaveConfig()
+	try.CheckErr(err, "Run: terminated abnormally")
+	repo.GetConfigManager().Save()
 }
 
 func install() {
 	selfAbsolutePath, err := filepath.Abs(os.Args[0])
-	log.Check(err, "Install: cannot locate self")
+	try.CheckErr(err, "Install: cannot locate self")
 
 	repo := openRepo()
-	gitDir := repo.GitDir()
+	configDir := repo.ConfigDir()
 
-	err = gitDir.MkdirAll("hooks", 0755)
-	log.Check(err, "Install: failed to create hooks directory")
+	err = configDir.MkdirAll("hooks", 0755)
+	try.CheckErr(err, "Install: failed to create hooks directory")
 
-	hookDir, err := gitDir.Chroot("hooks")
-	log.Check(err, "Install: failed to navigate to hooks directory")
+	hookDir, err := configDir.Chroot("hooks")
+	try.CheckErr(err, "Install: failed to navigate to hooks directory")
 
 	for _, hook := range hooks.GetHooks() {
-		fmt.Println("Installing", hook.ID(), "in", hookDir.Root(), "pointing to", selfAbsolutePath)
-		if _, err = hookDir.Stat(hook.ID()); err == nil {
+		log.Println("Installing", hook.ID(), "in", hookDir.Root(), "pointing to", selfAbsolutePath)
+		if _, err = hookDir.Lstat(hook.ID()); err == nil {
 			err = hookDir.Remove(hook.ID())
 			if err != nil && err != os.ErrNotExist {
-				log.Check(err, "Install: failed to remove hook %s", hook)
+				try.CheckErr(err, "Install: failed to remove hook %s", hook.Name())
 			}
 		}
 
-		err = os.Symlink(selfAbsolutePath, hookDir.Join(hookDir.Root(), hook.ID()))
-		log.Check(err, "Install: failed to install hook %s", hook)
+		err = osfs.Default.Symlink(selfAbsolutePath, hookDir.Join(hookDir.Root(), hook.ID()))
+		try.CheckErr(err, "Install: failed to install hook %s", hook.Name())
 	}
 
 	showConfig()
