@@ -76,7 +76,6 @@ _enabled_ for particular repository.
     "runType":     string,  // Either "perCommit" or "perFile", see below.
     "filePattern": string,  // File pattern to match this action against.
     "shellCmd":    string[] // Shell command and arguments with some extra options - see below.
-
 }
 ```
 

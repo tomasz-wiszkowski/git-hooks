@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path"
@@ -14,65 +13,8 @@ import (
 	"github.com/tomasz-wiszkowski/git-hooks/repo"
 	"github.com/tomasz-wiszkowski/git-hooks/sort"
 	"github.com/tomasz-wiszkowski/git-hooks/try"
+	"github.com/tomasz-wiszkowski/git-hooks/ui"
 )
-
-type reference struct {
-	hook   hooks.Hook
-	action hooks.Action
-}
-
-func add(target *tview.TreeNode, ref *reference) {
-	if ref.hook == nil {
-		hks := []hooks.Hook{}
-		for _, c := range hooks.GetHooks() {
-			hks = append(hks, c)
-		}
-		sort.SortInPlaceByName(hks)
-
-		for _, c := range hks {
-			node := tview.NewTreeNode(c.Name()).SetReference(&reference{c, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
-			target.AddChild(node)
-			add(node, node.GetReference().(*reference))
-		}
-	} else if ref.action == nil {
-		actions := ref.hook.Actions()
-		sort.SortInPlaceByName(actions)
-
-		for _, h := range actions {
-			node := tview.NewTreeNode("").SetReference(&reference{ref.hook, h}).SetSelectable(true)
-			updateTreeNode(h, node)
-			target.AddChild(node)
-		}
-	}
-}
-
-func updateTreeNode(action hooks.Action, node *tview.TreeNode) {
-	var marker rune
-	if !action.IsSelected() {
-		marker = ' '
-	} else if !action.IsAvailable() {
-		marker = '✘'
-	} else /* selected and available */ {
-		marker = '✔'
-	}
-
-	node.SetText(fmt.Sprintf("[%c] %s", marker, action.Name()))
-}
-
-func onTreeNodeSelected(node *tview.TreeNode) {
-	reference := node.GetReference().(*reference)
-
-	// Check if node or leaf. Nodes have no hook references.
-	if hook := reference.action; hook == nil {
-		// This is a node.
-		// Collapse if visible, expand if collapsed.
-		node.SetExpanded(!node.IsExpanded())
-	} else {
-		// This is a leaf.
-		hook.SetSelected(!hook.IsSelected())
-		updateTreeNode(hook, node)
-	}
-}
 
 func openRepo() repo.Repo {
 	r := repo.OpenRepo()
@@ -116,12 +58,9 @@ func runHooks(hook hooks.Hook, args []string) {
 
 func showConfig() {
 	repo := openRepo()
-	root := tview.NewTreeNode("Hooks").SetColor(tcell.ColorGrey)
-	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
-	tree.SetSelectedFunc(onTreeNodeSelected)
-	add(root, &reference{nil, nil})
 
 	app := tview.NewApplication()
+	tree := ui.NewHookTreeView(hooks.GetHooks())
 	app.SetRoot(tree, true).EnableMouse(true)
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEscape {
