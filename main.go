@@ -69,6 +69,7 @@ func showConfig() {
 		return event
 	})
 
+	app.EnableMouse(true)
 	err := app.Run()
 	check.Err(err, "Run: terminated abnormally")
 	repo.GetConfigManager().Save()
