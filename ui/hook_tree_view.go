@@ -2,11 +2,11 @@ package ui
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/tomasz-wiszkowski/git-hooks/hooks"
-	"github.com/tomasz-wiszkowski/git-hooks/sort"
 )
 
 type hookTreeNodeData struct {
@@ -20,7 +20,7 @@ func (v *HooksTreeView) addHookTreeNodes(target *tview.TreeNode) {
 	for _, c := range v.data {
 		hks = append(hks, c)
 	}
-	sort.SortInPlaceByName(hks)
+	sort.Slice(hks, func(a, b int) bool { return hks[a].Name() < hks[b].Name() })
 
 	for _, c := range hks {
 		node := tview.NewTreeNode(c.Name()).SetReference(&hookTreeNodeData{c, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
@@ -32,7 +32,7 @@ func (v *HooksTreeView) addHookTreeNodes(target *tview.TreeNode) {
 // Append individual action nodes to the hook node.
 func (v *HooksTreeView) addActionTreeNodes(target *tview.TreeNode, ref *hookTreeNodeData) {
 	actions := ref.hook.Actions()
-	sort.SortInPlaceByName(actions)
+	sort.Slice(actions, func(a, b int) bool { return actions[a].Name() < actions[b].Name() })
 
 	for _, h := range actions {
 		node := tview.NewTreeNode("").SetReference(&hookTreeNodeData{ref.hook, h}).SetSelectable(true)

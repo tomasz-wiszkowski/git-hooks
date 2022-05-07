@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/go-git/go-billy/v5/osfs"
@@ -12,7 +13,6 @@ import (
 	"github.com/tomasz-wiszkowski/git-hooks/check"
 	"github.com/tomasz-wiszkowski/git-hooks/hooks"
 	"github.com/tomasz-wiszkowski/git-hooks/repo"
-	"github.com/tomasz-wiszkowski/git-hooks/sort"
 	"github.com/tomasz-wiszkowski/git-hooks/ui"
 )
 
@@ -50,7 +50,7 @@ func runHooks(hook hooks.Hook, args []string) {
 	check.Err(err, "Run: cannot open work directory")
 
 	actions := hook.Actions()
-	sort.SortInPlaceByPriority(actions)
+	sort.Slice(actions, func(a, b int) bool { return actions[a].Priority() < actions[b].Priority() })
 	for _, h := range actions {
 		h.Run(files, args)
 	}
