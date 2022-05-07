@@ -9,10 +9,10 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/rivo/tview"
+	"github.com/tomasz-wiszkowski/git-hooks/check"
 	"github.com/tomasz-wiszkowski/git-hooks/hooks"
 	"github.com/tomasz-wiszkowski/git-hooks/repo"
 	"github.com/tomasz-wiszkowski/git-hooks/sort"
-	"github.com/tomasz-wiszkowski/git-hooks/try"
 	"github.com/tomasz-wiszkowski/git-hooks/ui"
 )
 
@@ -47,7 +47,7 @@ func runHooks(hook hooks.Hook, args []string) {
 
 	// Used by hooks install, file fixing and others
 	err := os.Chdir(repo.WorkDir().Root())
-	try.CheckErr(err, "Run: cannot open work directory")
+	check.Err(err, "Run: cannot open work directory")
 
 	actions := hook.Actions()
 	sort.SortInPlaceByPriority(actions)
@@ -70,34 +70,34 @@ func showConfig() {
 	})
 
 	err := app.Run()
-	try.CheckErr(err, "Run: terminated abnormally")
+	check.Err(err, "Run: terminated abnormally")
 	repo.GetConfigManager().Save()
 }
 
 func install() {
 	selfAbsolutePath, err := filepath.Abs(os.Args[0])
-	try.CheckErr(err, "Install: cannot locate self")
+	check.Err(err, "Install: cannot locate self")
 
 	repo := openRepo()
 	configDir := repo.ConfigDir()
 
 	err = configDir.MkdirAll("hooks", 0755)
-	try.CheckErr(err, "Install: failed to create hooks directory")
+	check.Err(err, "Install: failed to create hooks directory")
 
 	hookDir, err := configDir.Chroot("hooks")
-	try.CheckErr(err, "Install: failed to navigate to hooks directory")
+	check.Err(err, "Install: failed to navigate to hooks directory")
 
 	for _, hook := range hooks.GetHooks() {
 		log.Println("Installing", hook.ID(), "in", hookDir.Root(), "pointing to", selfAbsolutePath)
 		if _, err = hookDir.Lstat(hook.ID()); err == nil {
 			err = hookDir.Remove(hook.ID())
 			if err != nil && err != os.ErrNotExist {
-				try.CheckErr(err, "Install: failed to remove hook %s", hook.Name())
+				check.Err(err, "Install: failed to remove hook %s", hook.Name())
 			}
 		}
 
 		err = osfs.Default.Symlink(selfAbsolutePath, hookDir.Join(hookDir.Root(), hook.ID()))
-		try.CheckErr(err, "Install: failed to install hook %s", hook.Name())
+		check.Err(err, "Install: failed to install hook %s", hook.Name())
 	}
 
 	showConfig()

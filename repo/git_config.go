@@ -4,8 +4,8 @@ import (
 	"github.com/go-git/go-git/v5"
 	gitconfig "github.com/go-git/go-git/v5/config"
 	raw "github.com/go-git/go-git/v5/plumbing/format/config"
+	"github.com/tomasz-wiszkowski/git-hooks/check"
 	"github.com/tomasz-wiszkowski/git-hooks/config"
-	"github.com/tomasz-wiszkowski/git-hooks/try"
 )
 
 type gitConfigManager struct {
@@ -25,7 +25,7 @@ type gitConfig struct {
 
 func (g *gitConfigManager) Save() {
 	err := g.repo.SetConfig(g.config)
-	try.CheckErr(err, "Git: failed to save config")
+	check.Err(err, "Git: failed to save config")
 }
 
 func (g *gitConfigManager) GetConfigFor(categoryID, hookID string) config.Config {

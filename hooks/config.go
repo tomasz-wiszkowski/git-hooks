@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/tomasz-wiszkowski/git-hooks/try"
+	"github.com/tomasz-wiszkowski/git-hooks/check"
 )
 
 const (
@@ -38,7 +38,7 @@ type topConfig struct {
 // All other cases cause assertion failure.
 func loadConfigFile() map[string]Hook {
 	name, err := os.UserHomeDir()
-	try.CheckErr(err, "Unable to query user home directory")
+	check.Err(err, "Unable to query user home directory")
 
 	result := map[string]Hook{}
 
@@ -49,20 +49,20 @@ func loadConfigFile() map[string]Hook {
 
 	var config topConfig
 	err = json.Unmarshal(content, &config)
-	try.CheckErr(err, "Malformed config file")
+	check.Err(err, "Malformed config file")
 
 	// Assume Version 0 = no config.
 	if config.Version == 0 {
 		return result
 	}
 
-	try.CheckTrue(config.Version == 1, "Unsupported config file version %d", config.Version)
+	check.True(config.Version == 1, "Unsupported config file version %d", config.Version)
 
 	for ck, cv := range config.Hooks {
 		hooks := []Action{}
 
-		try.CheckTrue(len(ck) > 0, "Invalid category ID")
-		try.CheckTrue(len(cv.Name) > 0, "Invalid category name for category %s", ck)
+		check.True(len(ck) > 0, "Invalid category ID")
+		check.True(len(cv.Name) > 0, "Invalid category name for category %s", ck)
 
 		category := &hook{
 			id:      ck,
@@ -75,12 +75,12 @@ func loadConfigFile() map[string]Hook {
 			if hv.RunType == configRunTypePerCommit {
 				runType = runPerCommit
 			} else if hv.RunType != configRunTypePerFile {
-				try.CheckTrue(false, "Invalid runType %s for hook %s", hv.RunType, hk)
+				check.True(false, "Invalid runType %s for hook %s", hv.RunType, hk)
 			}
 
-			try.CheckTrue(len(hk) > 0, "Invalid hook ID in category %s", ck)
-			try.CheckTrue(len(hv.Name) > 0, "Invalid hook name for hook %s", hk)
-			try.CheckTrue(len(hv.ShellCmd) > 0, "Invalid shell command for hook %s", hk)
+			check.True(len(hk) > 0, "Invalid hook ID in category %s", ck)
+			check.True(len(hv.Name) > 0, "Invalid hook name for hook %s", hk)
+			check.True(len(hv.ShellCmd) > 0, "Invalid shell command for hook %s", hk)
 
 			hook := newShellAction(hk, hv.Name, hv.Priority, hv.Pattern, hv.ShellCmd, runType)
 			hooks = append(hooks, hook)

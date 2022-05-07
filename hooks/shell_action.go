@@ -6,8 +6,8 @@ import (
 	"path"
 	"regexp"
 
+	"github.com/tomasz-wiszkowski/git-hooks/check"
 	"github.com/tomasz-wiszkowski/git-hooks/config"
-	"github.com/tomasz-wiszkowski/git-hooks/try"
 )
 
 type RunType int8
@@ -161,7 +161,7 @@ func (h *shellAction) SetSelected(wantSelected bool) {
 // Specify the configuration section responsible for managing the hook data.
 func (h *shellAction) SetConfig(cfg config.Config) {
 	h.config = cfg
-	try.CheckTrue(cfg != nil, "No config section")
+	check.True(cfg != nil, "No config section")
 
 	h.SetSelected(cfg.GetOrDefault(keyEnabled, "") == valueTrue)
 	h.setShellCmd(cfg.GetOrDefault(keyCommand, h.shellCommand[0]))

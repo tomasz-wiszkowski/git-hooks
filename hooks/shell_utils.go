@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/tomasz-wiszkowski/git-hooks/try"
+	"github.com/tomasz-wiszkowski/git-hooks/check"
 )
 
 // Resolve executable name into full path.
@@ -22,7 +22,7 @@ func getShellCommandAbsolutePath(executableName string) (bool, string) {
 	}
 
 	workDir, err := os.Getwd()
-	try.CheckErr(err, "Resolve: cannot determine current dir")
+	check.Err(err, "Resolve: cannot determine current dir")
 
 	absPath = path.Join(workDir, executableName)
 	_, err = os.Stat(absPath)
