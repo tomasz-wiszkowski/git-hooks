@@ -14,31 +14,44 @@ type hookTreeNodeData struct {
 	action hooks.Action
 }
 
-func (v *HooksTreeView) add(target *tview.TreeNode, ref *hookTreeNodeData) {
-	if ref.hook == nil {
-		hks := []hooks.Hook{}
-		for _, c := range v.data {
-			hks = append(hks, c)
-		}
-		sort.SortInPlaceByName(hks)
+// Append individual hook nodes to the root node.
+func (v *HooksTreeView) addHookTreeNodes(target *tview.TreeNode) {
+	hks := []hooks.Hook{}
+	for _, c := range v.data {
+		hks = append(hks, c)
+	}
+	sort.SortInPlaceByName(hks)
 
-		for _, c := range hks {
-			node := tview.NewTreeNode(c.Name()).SetReference(&hookTreeNodeData{c, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
-			target.AddChild(node)
-			v.add(node, node.GetReference().(*hookTreeNodeData))
-		}
-	} else if ref.action == nil {
-		actions := ref.hook.Actions()
-		sort.SortInPlaceByName(actions)
-
-		for _, h := range actions {
-			node := tview.NewTreeNode("").SetReference(&hookTreeNodeData{ref.hook, h}).SetSelectable(true)
-			v.updateTreeNode(h, node)
-			target.AddChild(node)
-		}
+	for _, c := range hks {
+		node := tview.NewTreeNode(c.Name()).SetReference(&hookTreeNodeData{c, nil}).SetSelectable(true).SetColor(tcell.ColorGrey)
+		target.AddChild(node)
+		v.add(node, node.GetReference().(*hookTreeNodeData))
 	}
 }
 
+// Append individual action nodes to the hook node.
+func (v *HooksTreeView) addActionTreeNodes(target *tview.TreeNode, ref *hookTreeNodeData) {
+	actions := ref.hook.Actions()
+	sort.SortInPlaceByName(actions)
+
+	for _, h := range actions {
+		node := tview.NewTreeNode("").SetReference(&hookTreeNodeData{ref.hook, h}).SetSelectable(true)
+		v.updateTreeNode(h, node)
+		target.AddChild(node)
+	}
+}
+
+// Determine the type of the node being accessed by the user and populate its
+// children.
+func (v *HooksTreeView) add(target *tview.TreeNode, ref *hookTreeNodeData) {
+	if ref.hook == nil {
+		v.addHookTreeNodes(target)
+	} else if ref.action == nil {
+		v.addActionTreeNodes(target, ref)
+	}
+}
+
+// Update the tree node's display text.
 func (v *HooksTreeView) updateTreeNode(action hooks.Action, node *tview.TreeNode) {
 	var marker rune
 	if !action.IsSelected() {
@@ -52,27 +65,31 @@ func (v *HooksTreeView) updateTreeNode(action hooks.Action, node *tview.TreeNode
 	node.SetText(fmt.Sprintf("[%c] %s", marker, action.Name()))
 }
 
+// Respond to user selection. Toggle expanded state of nodes, and
+// toggle selected state of leaves.
 func (v *HooksTreeView) onTreeNodeSelected(node *tview.TreeNode) {
 	reference := node.GetReference().(*hookTreeNodeData)
 
-	// Check if node or leaf. Nodes have no hook references.
-	if hook := reference.action; hook == nil {
-		// This is a node.
-		// Collapse if visible, expand if collapsed.
+	// Check if node or leaf. Nodes have no action references.
+	if action := reference.action; action == nil {
+		// Node (ie. not an action): toggle expanded state.
 		node.SetExpanded(!node.IsExpanded())
 	} else {
-		// This is a leaf.
-		hook.SetSelected(!hook.IsSelected())
-		v.updateTreeNode(hook, node)
+		// Leaf (ie. action): toggle enabled state.
+		action.SetSelected(!action.IsSelected())
+		v.updateTreeNode(action, node)
 	}
 }
 
+// TUI TreeView for Hooks and Actions.
 type HooksTreeView struct {
 	*tview.TreeView
 	root *tview.TreeNode
 	data hooks.Hooks
 }
 
+// Instantiate a new HooksTreeView TUI element. The element is by default popuated
+// with all known hooks and actions.
 func NewHookTreeView(data hooks.Hooks) *HooksTreeView {
 	root := tview.NewTreeNode("Hooks").SetColor(tcell.ColorGrey)
 
