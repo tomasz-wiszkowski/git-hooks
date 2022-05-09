@@ -1,6 +1,9 @@
 package repo
 
 import (
+	"fmt"
+	"log"
+
 	billy "github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-git/v5"
 	gitconfig "github.com/go-git/go-git/v5/config"
@@ -51,6 +54,28 @@ func (g *gitRepo) GetConfigManager() config.ConfigManager {
 	}
 }
 
+func (g *gitRepo) GetListOfAllFiles() []string {
+	head, err := g.repo.Head()
+	check.Err(err, "Git: Can't Query HEAD")
+
+	commit, err := g.repo.CommitObject(head.Hash())
+	check.Err(err, "Git: Can't get top commit")
+
+	tree, err := commit.Tree()
+	check.Err(err, "Git: Can't get commit tree")
+
+	var paths []string
+	tree.Files().ForEach(func(f *object.File) error {
+		if !f.Mode.IsFile() {
+			return nil
+		}
+		paths = append(paths, f.Name)
+		return nil
+	})
+	fmt.Println(paths)
+	return paths
+}
+
 /// Query the top-most commit and collect the list of modified files.
 func (g *gitRepo) GetListOfNewAndModifiedFiles() []string {
 	head, err := g.repo.Head()
@@ -60,7 +85,10 @@ func (g *gitRepo) GetListOfNewAndModifiedFiles() []string {
 	check.Err(err, "Git: Can't Get top commit")
 
 	parent, err := commit.Parent(0)
-	check.Err(err, "Git: Can't Get parent commit")
+	if err != nil {
+		log.Println("Unable to query parent commit - assuming first commit")
+		return g.GetListOfAllFiles()
+	}
 
 	tree1, err := commit.Tree()
 	check.Err(err, "Git: Can't Get current tree")
