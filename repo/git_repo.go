@@ -45,12 +45,9 @@ func (g *gitRepo) ConfigDir() billy.Filesystem {
 }
 
 func (g *gitRepo) GetConfigManager() config.ConfigManager {
-	c, err := g.repo.Config()
-	check.Err(err, "Git: cannot query repository config")
-
 	return &gitConfigManager{
 		repo:   g.repo,
-		config: c,
+		config: g.config,
 	}
 }
 
